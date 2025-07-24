@@ -1,0 +1,842 @@
+<script type="text/javascript">
+    var gk_isXlsx = false;
+    var gk_xlsxFileLookup = {};
+
+    var gk_fileData = {};
+    function filledCell(cell) {
+        return cell !== '' && cell != null;
+    }
+    function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                    row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                    headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+    }
+</script>
+<!DOCTYPE html>
+<html lang="pt-PT">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial Completo de Flask: Do Básico ao Avançado com Correção de Erros</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <style>
+
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Tutorial Completo de Flask: Do Básico ao Avançado com Correção de Erros</h1>
+    </header>
+    <aside>
+        <h2>Índice</h2>
+        <ul>
+            <li><a href="#introducao-ao-flask">Introdução ao Flask</a></li>
+            <li><a href="#nivel-basico-configurando-a-fundacao">Nível Básico<span class="spMenu">: Configurando a
+                        Fundação</span></a></li>
+            <li><a href="#nivel-intermediario-construindo-as-paredes">Nível Intermediário<span class="spMenu">:
+                        Construindo as Paredes
+                    </span></a></li>
+            <li><a href="#nivel-avancado-decorando-e-otimizando">Nível Avançado<span class="spMenu">: Decorando e
+                        Otimizando</span></a></li>
+            <li><a href="#correcao-de-erro-typeerror">Correção de Erro<span class="spMenu">: TypeError</span></a></li>
+            <li><a href="#boas-praticas-e-dicas-finais">Boas Práticas<span class="spMenu"> e Dicas Finais</span></a>
+            </li>
+        </ul>
+    </aside>
+    <article>
+    <main>
+        <div class="toc">
+            <h2>Índice</h2>
+            <ul>
+                <li><a href="#introducao-ao-flask">Introdução ao Flask</a></li>
+                <li><a href="#nivel-basico-configurando-a-fundacao">Nível Básico: Configurando a Fundação</a></li>
+                <li><a href="#nivel-intermediario-construindo-as-paredes">Nível Intermediário: Construindo as
+                        Paredes</a></li>
+                <li><a href="#nivel-avancado-decorando-e-otimizando">Nível Avançado: Decorando e Otimizando</a></li>
+                <li><a href="#correcao-de-erro-typeerror">Correção de Erro: TypeError</a></li>
+                <li><a href="#boas-praticas-e-dicas-finais">Boas Práticas e Dicas Finais</a></li>
+            </ul>
+        </div>
+        <section id="introducao-ao-flask">
+            <h2>Introdução ao Flask</h2>
+            <p><strong>O que é Flask?</strong><br>
+                Flask é um microframework web em Python, leve e flexível, ideal para construir aplicações web. Pense no
+                Flask como uma caixa de ferramentas básica para construir uma casa: ele fornece o essencial (martelo,
+                pregos, madeira), mas você decide como montar tudo. Diferente de frameworks como Django, que vêm com
+                "móveis prontos", Flask oferece liberdade para configurar apenas o que você precisa.</p>
+            <p><strong>Por que usar Flask?</strong><br>
+                - <strong>Simplicidade</strong>: Perfeito para iniciantes e projetos pequenos/médios.<br>
+                - <strong>Flexibilidade</strong>: Escolha as bibliotecas e ferramentas que deseja.<br>
+                - <strong>Performance</strong>: Por ser leve, é rápido para projetos enxutos.</p>
+            <p><strong>Analogia</strong>: Flask é como cozinhar em uma cozinha minimalista. Você tem uma faca, uma
+                panela e um fogão, mas pode criar pratos incríveis combinando os ingredientes certos.</p>
+        </section>
+        <section id="nivel-basico-configurando-a-fundacao">
+            <h2>Nível Básico: Configurando a Fundação</h2>
+            <h3>Instalação do Flask</h3>
+            <p>Antes de construir, precisamos das ferramentas. Vamos instalar o Flask.</p>
+            <p><strong>Passo-a-passo</strong>:<br>
+                1. Crie um ambiente virtual para isolar dependências:
+            <div class="code">
+                <code>python -m venv venv</code><br>
+                <code>source venv/bin/activate  # Linux/Mac</code><br>
+                <code>venv\Scripts\activate     # Windows</code><br>
+            </div>
+            2. Instale o Flask:<br>
+            <div class="code"><code>pip install flask</code></div>
+            </p>
+            <p><strong>Dica de Segurança</strong>: Use ambientes virtuais para evitar conflitos de dependências.</p>
+            <h3>Criando a Primeira Aplicação</h3>
+            <p>Vamos criar um "Olá, Mundo!" para testar a fundação.</p>
+            <p><strong>Código</strong> (<code>app.py</code>):</p>
+            <pre><code>
+from flask import Flask
+
+app = Flask(__name__)  # Cria a aplicação Flask
+
+@app.route('/')  # Define a rota raiz ("/")
+def home():
+    return 'Olá, Mundo!'
+
+if __name__ == '__main__':
+    app.run(debug=True)  # Inicia o servidor de desenvolvimento</code></pre>
+            <p><strong>Explicação</strong>:<br>
+                - <code>Flask(__name__)</code>: Cria uma instância da aplicação Flask.<br>
+                - <code>@app.route('/')</code>: Define uma rota, ou seja, um "endereço" acessado no navegador.<br>
+                - <code>app.run(debug=True)</code>: Inicia um servidor local para testes. <strong>Nunca</strong> use em
+                produção.</p>
+            <p><strong>Analogia</strong>: A aplicação Flask é a fundação da casa. A rota <code>/</code> é a porta de
+                entrada.</p>
+            <p><strong>Teste</strong>:<br>
+                1. Execute <code>python app.py</code>.<br>
+                2. Acesse <code>http://localhost:5000</code>.</p>
+            <h3>Rotas Básicas e Respostas</h3>
+            <p>Rotas são como portas diferentes na casa.</p>
+            <p><strong>Exemplo</strong>:</p>
+            <pre><code>
+from flask import Flask
+
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return 'Bem-vindo à página inicial!'
+
+@app.route('/sobre')
+def sobre():
+    return 'Esta é a página Sobre!'
+
+@app.route('/usuario/<nome>')
+def usuario(nome):
+    return f'Olá, {nome}!'
+
+if __name__ == '__main__':
+    app.run(debug=True)</code></pre>
+            <p><strong>Explicação</strong>:<br>
+                - <code>/sobre</code>: Rota estática.<br>
+                - <code>/usuario/<nome></code>: Rota dinâmica com parâmetro.<br>
+                - <strong>Acessibilidade</strong>: Use mensagens claras.</p>
+            <p><strong>Analogia</strong>: Rotas são portas com placas indicando o que há dentro.</p>
+        </section>
+        <section id="nivel-intermediario-construindo-as-paredes">
+            <h2>Nível Intermediário: Construindo as Paredes</h2>
+            <h3>Templates (HTML Dinâmico)</h3>
+            <p>Templates tornam as páginas atraentes, como móveis na casa.</p>
+            <p><strong>Passo-a-passo</strong>:<br>
+                1. Crie uma pasta <code>templates</code>.<br>
+                2. Crie <code>templates/index.html</code>:<br>
+            <pre><code>
+&lt;!DOCTYPE html&gt;
+&lt;html lang="pt-BR"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+    &lt;title&gt;Página Inicial&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1&gt;Bem-vindo, {{ nome }}!&lt;/h1&gt;
+    &lt;p&gt;Esta é uma página dinâmica.&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+            3. Atualize <code>app.py</code>:<br>
+            <pre><code>
+from flask import Flask, render_template
+
+app = Flask(__name__)
+
+@app.route('/<nome>')
+def home(nome):
+    return render_template('index.html', nome=nome)
+
+if __name__ == '__main__':
+    app.run(debug=True)</code></pre>
+            <p><strong>Explicação</strong>:<br>
+                - <code>render_template</code>: Renderiza HTML com variáveis dinâmicas.<br>
+                - <code>{{ nome }}</code>: Sintaxe Jinja2.<br>
+                - <strong>Acessibilidade</strong>: Use <code>lang="pt-BR"</code> e <code>meta viewport</code>.</p>
+            <p><strong>Analogia</strong>: Templates são blueprints de decoração.</p>
+            <h3>Trabalhando com Formulários</h3>
+            <p>Formulários permitem interação do usuário.</p>
+            <p><strong>Exemplo</strong>:<br>
+                1. Crie <code>templates/form.html</code>:<br>
+            <pre><code>
+&lt;!DOCTYPE html&gt;
+&lt;html lang="pt-BR"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+    &lt;title&gt;Formulário&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1&gt;Envie seu Nome&lt;/h1&gt;
+    &lt;form method="POST" action="/submit"&gt;
+        &lt;label for="nome"&gt;Nome:&lt;/label&gt;
+        &lt;input type="text" id="nome" name="nome" required&gt;
+        &lt;button type="submit"&gt;Enviar&lt;/button&gt;
+    &lt;/form&gt;
+    {% if mensagem %}
+        &lt;p&gt;{{ mensagem }}&lt;/p&gt;
+    {% endif %}
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+            2. Atualize <code>app.py</code>:<br>
+            <pre><code>
+from flask import Flask, render_template, request
+
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return render_template('form.html')
+
+@app.route('/submit', methods=['POST'])
+def submit():
+    nome = request.form['nome']
+    return render_template('form.html', mensagem=f'Olá, {nome}!')
+
+if __name__ == '__main__':
+    app.run(debug=True)</code></pre>
+            <p><strong>Explicação</strong>:<br>
+                - <code>request.form['nome']</code>: Acessa dados do formulário.<br>
+                - <strong>Segurança</strong>: Use <code>required</code> para validação.</p>
+            <p><strong>Analogia</strong>: Formulários são caixas de correio.</p>
+            <h3>Redirecionamento e Navegação entre Páginas</h3>
+            <p>Redirecionamento guia o usuário entre páginas, como um guia na casa.</p>
+            <p><strong>Exemplo</strong>:<br>
+                1. Crie templates (<code>page1.html</code>, <code>page2.html</code>, <code>page3.html</code>):<br>
+                - <code>page1.html</code>:<br>
+            <pre><code>
+&lt;!DOCTYPE html&gt;
+&lt;html lang="pt-BR"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+    &lt;title&gt;Página 1&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1&gt;Página 1&lt;/h1&gt;
+    &lt;p&gt;Bem-vindo à primeira página!&lt;/p&gt;
+    &lt;a href="{{ url_for('page2') }}" role="button" aria-label="Ir para a próxima página"&gt;Próxima Página&lt;/a&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+            - <code>page2.html</code>:<br>
+            <pre><code>
+&lt;!DOCTYPE html&gt;
+&lt;html lang="pt-BR"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+    &lt;title&gt;Página 2&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1&gt;Página 2&lt;/h1&gt;
+    &lt;p&gt;Você está na segunda página.&lt;/p&gt;
+    &lt;a href="{{ url_for('page1') }}" role="button" aria-label="Voltar para a página anterior"&gt;Página Anterior&lt;/a&gt;
+    &lt;a href="{{ url_for('page3') }}" role="button" aria-label="Ir para a próxima página"&gt;Próxima Página&lt;/a&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+            - <code>page3.html</code>:<br>
+            <pre><code>
+&lt;!DOCTYPE html&gt;
+&lt;html lang="pt-BR"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+    &lt;title&gt;Página 3&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1&gt;Página 3&lt;/h1&gt;
+    &lt;p&gt;Esta é a última página.&lt;/p&gt;
+    &lt;a href="{{ url_for('page2') }}" role="button" aria-label="Voltar para a página anterior"&gt;Página Anterior&lt;/a&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+            2. Atualize <code>app.py</code>:<br>
+            <pre><code>
+from flask import Flask, render_template, redirect, url_for
+
+app = Flask(__name__)
+
+@app.route('/page1')
+def page1():
+    return render_template('page1.html')
+
+@app.route('/page2')
+def page2():
+    return render_template('page2.html')
+
+@app.route('/page3')
+def page3():
+    return render_template('page3.html')
+
+@app.route('/redirect-example')
+def redirect_example():
+    return redirect(url_for('page1'))
+
+if __name__ == '__main__':
+    app.run(debug=True)</code></pre>
+            <p><strong>Explicação</strong>:<br>
+                - <code>redirect</code>: Envia o usuário para outra rota.<br>
+                - <code>url_for</code>: Gera URLs dinamicamente.<br>
+                - <strong>Acessibilidade</strong>: Use <code>role="button"</code> e <code>aria-label</code>.<br>
+                - <strong>Segurança</strong>: Evite redirecionamentos abertos.</p>
+            <p><strong>Analogia</strong>: Redirecionamento é um guia; botões de navegação são placas.</p>
+            <h3>Banco de Dados com Flask-SQLAlchemy</h3>
+            <p>Para armazenar dados, usamos Flask-SQLAlchemy.</p>
+            <p><strong>Passo-a-passo</strong>:<br>
+                1. Instale:<br>
+                <code>pip install flask-sqlalchemy</code><br>
+                2. Configure <code>app.py</code>:<br>
+            <pre><code>
+from flask import Flask, render_template, request
+from flask_sqlalchemy import SQLAlchemy
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///exemplo.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+class Usuario(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(80), nullable=False)
+
+@app.route('/')
+def home():
+    return render_template('form.html')
+
+@app.route('/submit', methods=['POST'])
+def submit():
+    nome = request.form['nome']
+    usuario = Usuario(nome=nome)
+    db.session.add(usuario)
+    db.session.commit()
+    return render_template('form.html', mensagem=f'Usuário {nome} salvo!')
+
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True)</code></pre>
+            <p><strong>Explicação</strong>:<br>
+                - <code>SQLAlchemy</code>: Mapeia objetos para tabelas.<br>
+                - <strong>Performance</strong>: Use PostgreSQL em produção.</p>
+            <p><strong>Analogia</strong>: O banco é um arquivo; Flask-SQLAlchemy é o arquivista.</p>
+            <h3>Sessões e Autenticação</h3>
+            <p>Sessões "lembram" o usuário.</p>
+            <p><strong>Exemplo</strong>:<br>
+                1. Configure:<br>
+                <code>app.config['SECRET_KEY'] = 'sua-chave-secreta-aqui'</code><br>
+                2. Atualize <code>app.py</code>:<br>
+            <pre><code>
+from flask import Flask, render_template, request, session, redirect, url_for
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'sua-chave-secreta-aqui'
+
+@app.route('/')
+def home():
+    if 'username' in session:
+        return f'Bem-vindo, {session["username"]}! &lt;a href="/logout"&gt;Sair&lt;/a&gt;'
+    return redirect(url_for('login'))
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        session['username'] = request.form['username']
+        return redirect(url_for('home'))
+    return '''
+        &lt;form method="post"&gt;
+            &lt;label for="username"&gt;Usuário:&lt;/label&gt;
+            &lt;input type="text" id="username" name="username" required&gt;
+            &lt;button type="submit"&gt;Entrar&lt;/button&gt;
+        &lt;/form&gt;
+    '''
+
+@app.route('/logout')
+def logout():
+    session.pop('username', None)
+    return redirect(url_for('home'))
+
+if __name__ == '__main__':
+    app.run(debug=True)</code></pre>
+            <p><strong>Explicação</strong>:<br>
+                - <code>session</code>: Armazena dados do usuário.<br>
+                - <strong>Segurança</strong>: Use uma chave forte.</p>
+            <p><strong>Analogia</strong>: Sessões são um crachá.</p>
+        </section>
+        <section id="nivel-avancado-decorando-e-otimizando">
+            <h2>Nível Avançado: Decorando e Otimizando</h2>
+            <h3>Blueprints para Modularização</h3>
+            <p>Blueprints organizam o código.</p>
+            <p><strong>Exemplo</strong>:<br>
+                1. Crie <code>modulos/usuarios.py</code>:<br>
+            <pre><code>
+from flask import Blueprint, render_template
+
+usuarios_bp = Blueprint('usuarios', __name__)
+
+@usuarios_bp.route('/usuarios')
+def listar_usuarios():
+    return render_template('usuarios.html', usuarios=['Joao', 'Maria'])</code></pre>
+            2. Atualize <code>app.py</code>:<br>
+            <pre><code>
+from flask import Flask
+from modulos.usuarios import usuarios_bp
+
+app = Flask(__name__)
+app.register_blueprint(usuarios_bp)
+
+if __name__ == '__main__':
+    app.run(debug=True)</code></pre>
+            3. Crie <code>templates/usuarios.html</code>:<br>
+            <pre><code>
+&lt;!DOCTYPE html&gt;
+&lt;html lang="pt-BR"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+    &lt;title&gt;Usuários&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1&gt;Lista de Usuários&lt;/h1&gt;
+    &lt;ul&gt;
+    {% for usuario in usuarios %}
+        &lt;li&gt;{{ usuario }}&lt;/li&gt;
+    {% endfor %}
+    &lt;/ul&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+            <p><strong>Explicação</strong>:<br>
+                - <strong>Performance</strong>: Modularizar facilita manutenção.</p>
+            <p><strong>Analogia</strong>: Blueprints são cômodos separados.</p>
+            <h3>Segurança</h3>
+            <p>Segurança é como instalar fechaduras.</p>
+            <p>- <strong>Proteção contra CSRF</strong>:<br>
+                Instale <code>Flask-WTF</code>:<br>
+                <code>pip install flask-wtf</code><br>
+                Exemplo:<br>
+            <pre><code>
+from flask_wtf import FlaskForm
+from wtforms import StringField, SubmitField
+from wtforms.validators import DataRequired
+
+app.config['SECRET_KEY'] = 'sua-chave-secreta-aqui'
+
+class NomeForm(FlaskForm):
+    nome = StringField('Nome', validators=[DataRequired()])
+    submit = SubmitField('Enviar')
+
+@app.route('/', methods=['GET', 'POST'])
+def home():
+    form = NomeForm()
+    if form.validate_on_submit():
+        return f'Olá, {form.nome.data}!'
+    return render_template('form.html', form=form)</code></pre>
+            Template <code>form.html</code>:<br>
+            <pre><code>
+&lt;form method="POST"&gt;
+    {{ form.hidden_tag() }}
+    {{ form.nome.label }} {{ form.nome() }}
+    {{ form.submit() }}
+&lt;/form&gt;</code></pre>
+            - <strong>Prevenção de XSS</strong>: Use Jinja2 para escapar dados.<br>
+            - <strong>Senhas Seguras</strong>:<br>
+            Instale <code>Flask-Bcrypt</code>:<br>
+            <code>pip install flask-bcrypt</code><br>
+            Exemplo:<br>
+            <pre><code>
+from flask_bcrypt import Bcrypt
+
+bcrypt = Bcrypt(app)
+senha = bcrypt.generate_password_hash('minha_senha').decode('utf-8')</code></pre>
+            <p><strong>Analogia</strong>: Segurança é como instalar câmeras e trancas.</p>
+            <h3>Performance (Caching e Async)</h3>
+            <p>Para alto desempenho, usamos caching e async.</p>
+            <p>- <strong>Caching</strong>:<br>
+                <code>pip install flask-caching</code><br>
+                Exemplo:<br>
+            <pre><code>from flask_caching import Cache
+
+cache = Cache(app, config={'CACHE_TYPE': 'simple'})
+
+@app.route('/dados')
+@cache.cached(timeout=60)
+def dados():
+    return 'Dados caros para computar'</code></pre>
+            - <strong>Async</strong>:<br>
+            <pre><code>
+import aiohttp
+import asyncio
+from flask import Flask
+
+app = Flask(__name__)
+
+async def fetch_data():
+    async with aiohttp.ClientSession() as session:
+        async with session.get('https://api.exemplo.com') as response:
+            return await response.text()
+
+@app.route('/async')
+def async_route():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    result = loop.run_until_complete(fetch_data())
+    loop.close()
+    return result</code></pre>
+            <p><strong>Analogia</strong>: Caching é guardar comida pronta; async é contratar ajudantes.</p>
+            <h3>Acessibilidade em Templates</h3>
+            <p>- Use tags semânticas (<code>&lt;header&gt;</code>, <code>&lt;main&gt;</code>,
+                <code>&lt;footer&gt;</code>).<br>
+                - Adicione <code>aria-label</code> e <code>alt</code>.<br>
+                Exemplo:<br>
+                <code>&lt;img src="logo.png" alt="Logotipo da aplicação" aria-label="Logo"&gt;</code>
+            </p>
+            <h3>Deploy em Produção</h3>
+            <p>Use servidores de produção.</p>
+            <p>- <strong>Gunicorn + Nginx</strong>:<br>
+                <code>pip install gunicorn</code><br>
+                <code>gunicorn -w 4 app:app</code><br>
+                - <strong>Plataformas</strong>: Heroku, AWS, Render.<br>
+                - <strong>Segurança</strong>: Desative debug.<br>
+                - <strong>Performance</strong>: Use PostgreSQL.
+            </p>
+            <p><strong>Analogia</strong>: Deploy é abrir a casa para visitantes.</p>
+        </section>
+        <section id="correcao-de-erro-typeerror">
+            <h2>Correção de Erro: TypeError</h2>
+            <h3>Análise do Problema</h3>
+            <p>O erro <code>TypeError: string indices must be integers, not 'str'</code> ocorreu em <code>app.py</code>,
+                linha 9:<br>
+            <pre><code>
+inf = submit()
+dados_usuario = criar_dados(inf['nome'], inf["contacto"], inf["idade"], inf["profissao"])</code></pre>
+            <strong>Causa</strong>: <code>submit()</code> retorna um objeto de resposta (<code>render_template</code>),
+            não o dicionário <code>inf</code>. Indexar uma string causa o erro.</p>
+            <p><strong>Analogia</strong>: Você pediu uma carta (dicionário), mas recebeu a caixa de correio (resposta
+                HTTP).</p>
+            <h3>Código Corrigido</h3>
+            <h4><code>app.py</code></h4>
+            <pre><code>
+from flask import Flask, render_template, request, redirect, url_for
+from flask_wtf import FlaskForm
+from wtforms import StringField, IntegerField, TextAreaField, SubmitField
+from wtforms.validators import DataRequired, NumberRange
+from informacoes import dados as criar_dados
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'sua-chave-secreta-aqui'
+
+class InfoForm(FlaskForm):
+    nome = StringField('Nome', validators=[DataRequired(message="O nome é obrigatório.")])
+    contacto = IntegerField('Contacto', validators=[DataRequired(message="O contacto é obrigatório.")])
+    idade = IntegerField('Idade', validators=[DataRequired(message="A idade é obrigatória."), NumberRange(min=0, max=150)])
+    profissao = TextAreaField('Profissão', validators=[DataRequired(message="A profissão é obrigatória.")])
+    submit = SubmitField('Enviar')
+
+@app.route('/')
+def index():
+    dados_usuario = criar_dados("Visitante", "Não informado", "Não informado", "Não informado")
+    return render_template("index.html", dados=dados_usuario)
+
+@app.route('/<nome>')
+def mostrar_nome(nome):
+    dados_usuario = criar_dados(nome, "878690250", "30", "Programador")
+    return render_template("index.html", dados=dados_usuario)
+
+@app.route('/informacoes', methods=['GET', 'POST'])
+def informacoes():
+    form = InfoForm()
+    if form.validate_on_submit():
+        dados_usuario = criar_dados(
+            form.nome.data,
+            form.contacto.data,
+            form.idade.data,
+            form.profissao.data
+        )
+        return render_template("index.html", dados=dados_usuario)
+    return render_template("informacoes.html", form=form)
+
+if __name__ == "__main__":
+    app.run(debug=True)</code></pre>
+            <h4><code>informacoes.py</code></h4>
+            <pre><code>def dados(n, c, i, p):
+    return {
+        "nome": n,
+        "contacto": c,
+        "idade": i,
+        "profissao": p
+    }</code></pre>
+            <h4><code>templates/index.html</code></h4>
+            <pre><code>
+&lt;!DOCTYPE html&gt;
+&lt;html lang="pt-PT"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+    &lt;title&gt;Home&lt;/title&gt;
+    &lt;style&gt;
+        * { box-sizing: border-box; }
+        body { max-width: 100vw; height: 100vh; position: relative; background-color: rgb(226, 223, 223); }
+        header { position: fixed; height: 80px; background-color: #fff; width: 100%; margin: 0; top: 0; left: 0; text-align: center; box-shadow: 0 2px 8px 3px rgba(0, 0, 0, 0.281); }
+        main { position: absolute; top: 50%; left: 0; width: 100%; margin: auto; transform: translateY(-50%); display: flex; flex-direction: column; gap: 2rem; }
+        footer { position: fixed; height: 80px; background-color: #fff; width: 100%; left: 0; bottom: 0; text-align: center; box-shadow: 0 -2px 8px 3px rgba(0, 0, 0, 0.281); }
+        div, .prof { font-size: 1.2rem; font-weight: bold; border-radius: 8px; background-color: rgb(42, 33, 107); width: 90%; max-width: 700px; margin: auto; color: #fff; }
+        .infContainer { padding: 1rem 3px 0 1rem; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 1rem; }
+        .prof { padding: 0 0 0 2rem; }
+        ul, .divProf { list-style: none; box-shadow: -1.3px -2px 2px rgba(173, 173, 189, 0.4); border-radius: 8px; padding: 1rem; }
+        li { font-size: 1.2rem; font-weight: bold; margin-top: 0.5rem; }
+        span { font-weight: normal; }
+        nav { margin-top: 1rem; }
+        nav a { color: #fff; text-decoration: none; padding: 0.5rem 1rem; background-color: #3b3b80; border-radius: 5px; margin: 0 0.5rem; }
+        nav a:hover { background-color: #2a2d2e; }
+    &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;header&gt;
+        &lt;h1&gt;Bem-vindo, {{ dados["nome"] | safe }}!&lt;/h1&gt;
+    &lt;/header&gt;
+    &lt;main&gt;
+        &lt;section&gt;
+            &lt;div class="infContainer"&gt;
+                &lt;h2&gt;Suas informações:&lt;/h2&gt;
+                &lt;ul&gt;
+                    &lt;li&gt;Nome: &lt;span&gt;{{ dados["nome"] | safe }}&lt;/span&gt;&lt;/li&gt;
+                    &lt;li&gt;Idade: &lt;span&gt;{{ dados["idade"] | safe }}&lt;/span&gt;&lt;/li&gt;
+                    &lt;li&gt;Contacto: &lt;span&gt;{{ dados["contacto"] | safe }}&lt;/span&gt;&lt;/li&gt;
+                &lt;/ul&gt;
+            &lt;/div&gt;
+        &lt;/section&gt;
+        &lt;section class="prof"&gt;
+            &lt;h2&gt;Profissão&lt;/h2&gt;
+            &lt;div class="divProf"&gt;{{ dados["profissao"] | safe }}&lt;/div&gt;
+        &lt;/section&gt;
+        &lt;nav&gt;
+            &lt;a href="{{ url_for('informacoes') }}" role="button" aria-label="Ir para o formulário de informações"&gt;Editar Informações&lt;/a&gt;
+        &lt;/nav&gt;
+    &lt;/main&gt;
+    &lt;footer&gt;
+        &lt;p&gt;Esta é uma página dinâmica&lt;/p&gt;
+        &lt;p&gt;Criada por Edinel Mario&lt;/p&gt;
+    &lt;/footer&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+            <h4><code>templates/informacoes.html</code></h4>
+            <pre><code>
+&lt;!DOCTYPE html&gt;
+&lt;html lang="pt-PT"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+    &lt;title&gt;Informações&lt;/title&gt;
+    &lt;style&gt;
+        * { box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; color: #333; margin: 0; padding: 20px; }
+        main { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); margin-top: 20px; }
+        div { font-size: 20px; font-weight: bold; border-radius: 8px; padding: 1rem; background-color: #2a2d2e; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; margin-bottom: 1rem; }
+        input, textarea { flex: 1; padding: 1rem; border-radius: 8px; border: none; background-color: #fff; color: #000; font-size: 16px; font-weight: bold; outline: none; }
+        textarea { min-height: 1rem; max-height: 10rem; }
+        button { padding: 1rem; border: none; border-radius: 5px; background-color: #3b3b80; color: white; cursor: pointer; font-size: 16px; font-weight: bold; white-space: nowrap; }
+        .confirma { font-size: 14pt; font-weight: normal; }
+        .erro { color: red; font-weight: bold; }
+        nav a { color: #fff; text-decoration: none; padding: 0.5rem 1rem; background-color: #3b3b80; border-radius: 5px; margin: 0 0.5rem; }
+        nav a:hover { background-color: #2a2d2e; }
+    &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1 style="margin: auto; text-align: center;"&gt;Envie seus dados&lt;/h1&gt;
+    &lt;main&gt;
+        &lt;form method="POST"&gt;
+            {{ form.hidden_tag() }}
+            &lt;div&gt;
+                {{ form.nome.label }}
+                {{ form.nome(placeholder="Digite seu nome", required=True) }}
+            &lt;/div&gt;
+            &lt;div&gt;
+                {{ form.idade.label }}
+                {{ form.idade(placeholder="Digite sua idade", required=True) }}
+            &lt;/div&gt;
+            &lt;div&gt;
+                {{ form.contacto.label }}
+                {{ form.contacto(placeholder="Digite seu contacto", required=True) }}
+            &lt;/div&gt;
+            &lt;div&gt;
+                {{ form.profissao.label }}
+                {{ form.profissao(placeholder="Fale sobre sua profissão", required=True) }}
+            &lt;/div&gt;
+            &lt;div class="confirma"&gt;
+                &lt;p&gt;Os seus dados foram coletados, confirme-os abaixo:&lt;/p&gt;
+                {{ form.submit() }}
+            &lt;/div&gt;
+        &lt;/form&gt;
+        {% if form.errors %}
+            &lt;div class="erro"&gt;
+                &lt;p&gt;Erros no formulário:&lt;/p&gt;
+                &lt;ul&gt;
+                    {% for field, errors in form.errors.items() %}
+                        {% for error in errors %}
+                            &lt;li&gt;{{ error }}&lt;/li&gt;
+                        {% endfor %}
+                    {% endfor %}
+                &lt;/ul&gt;
+            &lt;/div&gt;
+        {% endif %}
+        &lt;nav&gt;
+            &lt;a href="{{ url_for('index') }}" role="button" aria-label="Voltar para a página inicial"&gt;Voltar&lt;/a&gt;
+        &lt;/nav&gt;
+    &lt;/main&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+            <p><strong>Mudanças</strong>:<br>
+                - <strong>Erro corrigido</strong>: Removida a chamada direta a <code>submit()</code> na rota
+                <code>/</code>. Usamos <code>Flask-WTF</code> para validação e processamento do formulário.<br>
+                - <strong>Segurança</strong>: Adicionada proteção CSRF com <code>form.hidden_tag()</code>.<br>
+                - <strong>Acessibilidade</strong>: Labels associados e mensagens de erro claras.<br>
+                - <strong>Navegação</strong>: Links para navegar entre páginas.
+            </p>
+            <h3>Como o Sistema Funciona Agora</h3>
+            <p>1. <strong>Rota <code>/</code></strong>: Exibe <code>index.html</code> com dados padrão.<br>
+                2. <strong>Rota <code>/<nome></code></strong>: Exibe <code>index.html</code> com dados fictícios.<br>
+                3. <strong>Rota <code>/informacoes</code></strong>: GET exibe o formulário; POST valida e redireciona
+                para <code>index.html</code>.<br>
+                4. <strong>Navegação</strong>: Links permitem alternar entre páginas.<br>
+                5. <strong>Segurança</strong>: CSRF e validação de formulário.<br>
+                6. <strong>Acessibilidade</strong>: Tags semânticas e <code>aria-label</code>.</p>
+            <p><strong>Teste</strong>:<br>
+                1. Execute <code>python app.py</code>.<br>
+                2. Acesse <code>http://localhost:5000/</code>.<br>
+                3. Acesse <code>http://localhost:5000/informacoes</code>, preencha o formulário e envie.<br>
+                4. Use os links de navegação.</p>
+            <h3>Exemplo de Paginação</h3>
+            <p>Para navegação com "Próxima Página" e "Página Anterior":</p>
+            <pre><code>
+@app.route('/lista', methods=['GET'])
+def lista():
+    page = request.args.get('page', 1, type=int)
+    dados_lista = [
+        criar_dados("Joao", "123", "25", "Engenheiro"),
+        criar_dados("Maria", "456", "30", "Designer"),
+        criar_dados("Ana", "789", "28", "Programadora")
+    ]
+    per_page = 1
+    total = len(dados_lista)
+    start = (page - 1) * per_page
+    end = start + per_page
+    dados_pagina = dados_lista[start:end]
+    return render_template("lista.html", dados=dados_pagina, page=page, total=total, per_page=per_page)</code></pre>
+            <p><strong><code>templates/lista.html</code></strong>:<br>
+            <pre><code>
+&lt;!DOCTYPE html&gt;
+&lt;html lang="pt-PT"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+    &lt;title&gt;Lista de Usuários&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1&gt;Lista de Usuários&lt;/h1&gt;
+    {% for item in dados %}
+        &lt;p&gt;Nome: {{ item["nome"] }} - Profissão: {{ item["profissao"] }}&lt;/p&gt;
+    {% endfor %}
+    &lt;nav&gt;
+        {% if page > 1 %}
+            &lt;a href="{{ url_for('lista', page=page-1) }}" role="button" aria-label="Página anterior"&gt;Página Anterior&lt;/a&gt;
+        {% endif %}
+        {% if page * per_page < total %}
+            &lt;a href="{{ url_for('lista', page=page+1) }}" role="button" aria-label="Próxima página"&gt;Próxima Página&lt;/a&gt;
+        {% endif %}
+    &lt;/nav&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+            <p><strong>Analogia</strong>: Paginação é como folhear um livro.</p>
+        </section>
+        <section id="boas-praticas-e-dicas-finais">
+            <h2>Boas Práticas e Dicas Finais</h2>
+            <p>- <strong>Divida para Conquistar</strong>: Use Blueprints e funções pequenas.<br>
+                - <strong>Segurança</strong>: Valide entradas, use HTTPS, proteja contra CSRF/XSS.<br>
+                - <strong>Performance</strong>: Use caching, otimize SQL, considere async.<br>
+                - <strong>Acessibilidade</strong>: Teste com Lighthouse.<br>
+                - <strong>Testes</strong>: Use <code>pytest</code>:<br>
+                <code>pip install pytest</code><br>
+                Exemplo (<code>test_app.py</code>):<br>
+            <pre><code>
+def test_home(client):
+    response = client.get('/')
+    assert response.status_code == 200</code></pre>
+            <p><strong>Analogia Final</strong>: Construir uma aplicação Flask é como construir uma casa personalizada:
+                fundação sólida, cômodos funcionais, decoração cuidadosa, segurança e acessibilidade.</p>
+        </section>
+    </main>
+    <footer>
+                &copy; 2025 Star B - Tecnologia, Programação e Engenharia
+        <p>Pagina por: Edinel Mario Adelso.</p>
+        <ul style="
+        list-style: none;
+        display: flex;
+        justify-content: center; gap: 12px;">
+            <li>marenguae@gmail.com</li>
+            <li>+258878690250</li>
+            <li>+258841945821</li>
+            <li>
+                <a href="https://wa.me/258878690250?text=Olá,%20podemos%20conversar?%20GitHub" target="_blank">
+                    <img src="https://img.shields.io/badge/-edineladelso-05122A?style=flat&logo=whatsapp" alt="whatsapp" />
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/edineladelso/" target="_blank">
+                    <img src="https://img.shields.io/badge/-edineladelso-05122A?style=flat&logo=github" alt="whatsapp" />
+                </a>
+            </li>
+        </ul>
+    </footer>
+</article>
+</body>
+
+</html>
