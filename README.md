@@ -4,6 +4,11 @@
 **Contato:** [WhatsApp](https://wa.me/258878690250?text=Olá,%20podemos%20conversar?%20GitHub) | marenguae@gmail.com  
 **GitHub:** [@edineladelso](https://github.com/edineladelso)
 
+
+<p>
+	Link da pagina:
+	<a href="https://edineladelso.github.io/flaskTutorialCompleto/" target="_blank">https://edineladelso.github.io/flaskTutorialCompleto/</a>
+</p>
 ---
 
 ## 📚 Sobre o Projeto
